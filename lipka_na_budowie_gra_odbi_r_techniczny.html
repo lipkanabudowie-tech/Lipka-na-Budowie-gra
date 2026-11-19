@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lipka na Budowie: Odbiór Techniczny</title>
+  <!-- Czcionki dopasowane do klimatu technicznego i gry -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;600;700&display=swap">
+  <!-- Ikony FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Tone.js do efektów dźwiękowych generowanych syntetycznie -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #111827;
+      color: #F9FAFB;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, .brand-font {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Główny kontener gry */
+    .game-wrapper {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Górny pasek HUD */
+    .hud-bar {
+      background: #1F2937;
+      border: 2px solid #374151;
+      border-radius: 14px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-brand-badge {
+      background: #EA580C;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 3px 0 #9A3412;
+    }
+
+    .hud-stats {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9CA3AF;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #10B981;
+    }
+
+    .stat-value.time {
+      color: #F59E0B;
+    }
+
+    .stat-value.danger {
+      color: #EF4444;
+      animation: pulse 0.5s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.12); }
+    }
+
+    /* Kontener Canvas */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 460px;
+      background: #F3F4F6;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 3px solid #374151;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Nakładki ekranowe (Start / Koniec gry) */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.92);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      text-align: center;
+      z-index: 10;
+      transition: opacity 0.25s ease;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .overlay h2 {
+      font-size: 32px;
+      color: #F9FAFB;
+      margin-bottom: 10px;
+    }
+
+    .overlay p {
+      font-size: 15px;
+      color: #D1D5DB;
+      max-width: 520px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* Legenda przedmiotów na ekranie startowym */
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 540px;
+      text-align: left;
+    }
+
+    .legend-item {
+      background: #1F2937;
+      border: 1px solid #374151;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .legend-icon {
+      font-size: 20px;
+      width: 28px;
+      text-align: center;
+    }
+
+    /* Przyciski stylizowane do gry */
+    .controls-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .btn-game {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 13px 26px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.1s ease, filter 0.15s ease;
+      color: #FFFFFF;
+    }
+
+    .btn-game:active {
+      transform: translateY(3px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #F97316 0%, #EA580C 100%);
+      box-shadow: 0 5px 0 #9A3412, 0 8px 15px rgba(234, 88, 12, 0.35);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.08);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(180deg, #14B8A6 0%, #0F766E 100%);
+      box-shadow: 0 5px 0 #115E59, 0 8px 15px rgba(15, 118, 110, 0.3);
+    }
+
+    .btn-secondary:hover {
+      filter: brightness(1.08);
+    }
+
+    .btn-touch {
+      background: #374151;
+      box-shadow: 0 4px 0 #1F2937;
+      padding: 14px 28px;
+      font-size: 20px;
+    }
+
+    .touch-controls {
+      display: none;
+      gap: 20px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .canvas-container {
+        height: 400px;
+      }
+      .legend-grid {
+        grid-template-columns: 1fr;
+      }
+      .touch-controls {
+        display: flex;
+      }
+      .overlay h2 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-wrapper">
+    <!-- GÓRNY PASEK STATYSTYK -->
+    <div class="hud-bar">
+      <div class="hud-brand">
+        <div class="hud-brand-badge">
+          <i class="fa-solid fa-helmet-safety"></i>
+        </div>
+        <div>
+          <div class="brand-font" style="font-size: 18px; font-weight: 700; color: #F9FAFB;">Lipka na Budowie</div>
+          <div style="font-size: 12px; color: #9CA3AF;">Symulator Odbioru Technicznego</div>
+        </div>
+      </div>
+
+      <div class="hud-stats">
+        <div class="stat-box">
+          <span class="stat-label">Oszczędności klienta</span>
+          <span class="stat-value" id="scoreDisplay">0 zł</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Wykryte wady</span>
+          <span class="stat-value" style="color: #38BDF8;" id="defectsDisplay">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Czas odbioru</span>
+          <span class="stat-value time" id="timeDisplay">45s</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- POLE GRY (CANVAS) -->
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- EKRAN STARTOWY -->
+      <div class="overlay" id="startScreen">
+        <div style="background: #EA580C; color: #fff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;">
+          Stan Deweloperski • Weryfikacja PN
+        </div>
+        <h2>Odbierz lokal i uratuj budżet!</h2>
+        <p>Wciel się w Przemysława Lipkę. Łap usterki budowlane łatą murarską i kamerą termowizyjną, aby wpisać je do protokołu. Unikaj wymówek przedstawiciela dewelopera!</p>
+
+        <div class="legend-grid">
+          <div class="legend-item">
+            <span class="legend-icon">🪟</span>
+            <div><strong style="color:#10B981;">Rysa na szybie (+1 500 zł)</strong><br><span style="color:#9CA3AF;font-size:12px;">Wymiana pakietu na koszt dewelopera</span></div>
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon">📐</span>
+            <div><strong style="color:#10B981;">Krzywy tynk (+1 000 zł)</strong><br><span style="color:#9CA3AF;font-size:12px;">Odchyłka powyżej normy PN</span></div>
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon">❄️</span>
+            <div><strong style="color:#38BDF8;">Mostek termiczny (+2 000 zł)</strong><br><span style="color:#9CA3AF;font-size:12px;">Wykryty kamerą termowizyjną</span></div>
+          </div>
+          <div class="legend-item">
+            <span class="legend-icon">🗣️</span>
+            <div><strong style="color:#EF4444;">„Panie, to norma!” (-1 500 zł)</strong><br><span style="color:#9CA3AF;font-size:12px;">Wymówka dewelopera – unikaj!</span></div>
+          </div>
+        </div>
+
+        <button class="btn-game btn-primary" id="startBtn">
+          <i class="fa-solid fa-play"></i> Rozpocznij odbiór
+        </button>
+      </div>
+
+      <!-- EKRAN KOŃCA GRY -->
+      <div class="overlay hidden" id="gameOverScreen">
+        <div id="rankBadge" style="background: #0F766E; color: #fff; font-size: 13px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; margin-bottom: 12px;">
+          Protokół podpisany!
+        </div>
+        <h2 id="endTitle">Koniec odbioru technicznego</h2>
+        <p id="endSummary" style="font-size: 17px; margin-bottom: 18px;"></p>
+        <div style="background: #1F2937; border: 1px solid #374151; border-radius: 12px; padding: 16px 28px; margin-bottom: 24px;">
+          <div style="font-size: 12px; color: #9CA3AF; text-transform: uppercase;">Łączne oszczędności na naprawach:</div>
+          <div id="finalScore" class="brand-font" style="font-size: 42px; font-weight: 700; color: #10B981;">0 zł</div>
+        </div>
+        <button class="btn-game btn-primary" id="restartBtn">
+          <i class="fa-solid fa-rotate-right"></i> Kolejny lokal do odbioru
+        </button>
+      </div>
+    </div>
+
+    <!-- PRZYCISKI ZEWNĘTRZNE (STEROWANIE + DŹWIĘK) -->
+    <div class="controls-bar">
+      <div class="touch-controls">
+        <button class="btn-game btn-touch" id="leftTouchBtn" aria-label="W lewo">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <button class="btn-game btn-touch" id="rightTouchBtn" aria-label="W prawo">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <button class="btn-game btn-secondary" id="soundToggleBtn" style="padding: 10px 18px; font-size: 14px;">
+        <i class="fa-solid fa-volume-high" id="soundIcon"></i> <span id="soundText">Dźwięk: WŁ.</span>
+      </button>
+      <div style="font-size: 13px; color: #9CA3AF;">
+        Sterowanie: <strong>Strzałki ◀ ▶</strong> lub <strong>Mysz / Dotyk</strong>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * SILNIK GRY: LIPKA NA BUDOWIE - ODBIÓR TECHNICZNY
+     * Zawiera responsywny Canvas, syntezator dźwięku Tone.js oraz obsługę klawiatury, myszy i dotyku.
+     */
+    (function () {
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const container = document.getElementById('canvasContainer');
+
+      // Elementy interfejsu
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      const defectsDisplay = document.getElementById('defectsDisplay');
+      const timeDisplay = document.getElementById('timeDisplay');
+      const startScreen = document.getElementById('startScreen');
+      const gameOverScreen = document.getElementById('gameOverScreen');
+      const startBtn = document.getElementById('startBtn');
+      const restartBtn = document.getElementById('restartBtn');
+      const soundToggleBtn = document.getElementById('soundToggleBtn');
+      const soundIcon = document.getElementById('soundIcon');
+      const soundText = document.getElementById('soundText');
+      const leftTouchBtn = document.getElementById('leftTouchBtn');
+      const rightTouchBtn = document.getElementById('rightTouchBtn');
+
+      // Stan gry
+      let gameRunning = false;
+      let score = 0;
+      let defectsCount = 0;
+      let timeLeft = 45;
+      let soundEnabled = true;
+      let lastTimestamp = 0;
+      let spawnTimer = 0;
+      let timerInterval = null;
+      let animationFrameId = null;
+
+      // Obiekt gracza (Inżynier Przemysław Lipka)
+      const player = {
+        x: 350,
+        y: 0,
+        width: 96,
+        height: 92,
+        speed: 560,
+        vx: 0,
+        hasThermalBoost: false,
+        boostTimer: 0
+      };
+
+      // Tablice spadających obiektów oraz unoszących się napisów punktowych
+      let items = [];
+      let floatingTexts = [];
+
+      // Definicje typów obiektów na budowie
+      const ITEM_TYPES = [
+        {
+          type: 'scratch',
+          label: 'Rysa na szybie',
+          points: 1500,
+          emoji: '🪟',
+          color: '#0284C7',
+          isBad: false,
+          weight: 28
+        },
+        {
+          type: 'plaster',
+          label: 'Krzywy tynk',
+          points: 1000,
+          emoji: '📐',
+          color: '#0F766E',
+          isBad: false,
+          weight: 30
+        },
+        {
+          type: 'thermal',
+          label: 'Mostek termiczny',
+          points: 2000,
+          emoji: '❄️',
+          color: '#2563EB',
+          isBad: false,
+          weight: 16
+        },
+        {
+          type: 'socket',
+          label: 'Brak fazy w gnieździe',
+          points: 1200,
+          emoji: '⚡',
+          color: '#D97706',
+          isBad: false,
+          weight: 18
+        },
+        {
+          type: 'camera',
+          label: 'Kamera FLIR (2x pkt!)',
+          points: 500,
+          emoji: '📷',
+          color: '#EA580C',
+          isBad: false,
+          isPowerup: true,
+          weight: 8
+        },
+        {
+          type: 'excuse1',
+          label: '„Ekipa wykończy!”',
+          points: -1500,
+          emoji: '🗣️',
+          color: '#DC2626',
+          isBad: true,
+          weight: 16
+        },
+        {
+          type: 'excuse2',
+          label: '„Taka norma Panie!”',
+          points: -1500,
+          emoji: '📋',
+          color: '#B91C1C',
+          isBad: true,
+          weight: 14
+        }
+      ];
+
+      // Syntezator dźwięków (Tone.js)
+      let synth = null;
+      function initAudio() {
+        try {
+          if (!synth && typeof Tone !== 'undefined') {
+            synth = new Tone.PolySynth(Tone.Synth).toDestination();
+            synth.volume.value = -8;
+          }
+        } catch (e) {
+          console.warn('Audio init skipped:', e);
+        }
+      }
+
+      function playSound(type) {
+        if (!soundEnabled || !synth) return;
+        try {
+          if (Tone.context.state !== 'running') {
+            Tone.start();
+          }
+          const now = Tone.now();
+          if (type === 'good') {
+            synth.triggerAttackRelease(['C5', 'E5'], '16n', now);
+          } else if (type === 'powerup') {
+            synth.triggerAttackRelease(['E5', 'G5', 'B5'], '16n', now);
+          } else if (type === 'bad') {
+            synth.triggerAttackRelease(['G2', 'F#2'], '8n', now);
+          } else if (type === 'end') {
+            synth.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '4n', now);
+          }
+        } catch (e) {
+          // Ignoruj błędy audio w razie blokady przeglądarki
+        }
+      }
+
+      // Dopasowanie rozmiaru Canvas do kontenera
+      function resizeCanvas() {
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        player.y = canvas.height - player.height - 14;
+        if (player.x > canvas.width - player.width) {
+          player.x = canvas.width - player.width;
+        }
+      }
+
+      // Losowanie obiektu na podstawie wag
+      function pickRandomItemType() {
+        const totalWeight = ITEM_TYPES.reduce((sum, item) => sum + item.weight, 0);
+        let rand = Math.random() * totalWeight;
+        for (const item of ITEM_TYPES) {
+          if (rand < item.weight) return item;
+          rand -= item.weight;
+        }
+        return ITEM_TYPES[0];
+      }
+
+      // Tworzenie nowego spadającego elementu
+      function spawnItem() {
+        const template = pickRandomItemType();
+        const size = template.isBad ? 52 : 46;
+        const margin = 30;
+        const x = margin + Math.random() * (canvas.width - size - margin * 2);
+        // Przyspieszenie wraz z upływem czasu
+        const speedMultiplier = 1 + (45 - timeLeft) * 0.018;
+        const speed = (170 + Math.random() * 110) * speedMultiplier;
+
+        items.push({
+          ...template,
+          x: x,
+          y: -size,
+          size: size,
+          speed: speed
+        });
+      }
+
+      // Dodanie unoszącego się tekstu z wynikiem
+      function addFloatingText(x, y, text, color) {
+        floatingTexts.push({
+          x: x,
+          y: y,
+          text: text,
+          color: color,
+          alpha: 1.0,
+          vy: -65
+        });
+      }
+
+      // Rysowanie tła lokalu w stanie deweloperskim
+      function drawBackground() {
+        // Ściana tynkowana
+        ctx.fillStyle = '#F3F4F6';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Siatka pomiarowa / laser krzyżowy w tle
+        ctx.strokeStyle = 'rgba(15, 118, 110, 0.14)';
+        ctx.lineWidth = 1;
+        const gridSize = 48;
+        for (let x = 0; x < canvas.width; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(canvas.width, y);
+          ctx.stroke();
+        }
+
+        // Pozioma linia lasera budowlanego
+        ctx.strokeStyle = 'rgba(234, 88, 12, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height * 0.68);
+        ctx.lineTo(canvas.width, canvas.height * 0.68);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Okno balkonowe w tle (stan deweloperski)
+        const winW = Math.min(260, canvas.width * 0.35);
+        const winH = 190;
+        const winX = (canvas.width - winW) / 2;
+        const winY = 45;
+        ctx.fillStyle = '#E0F2FE';
+        ctx.fillRect(winX, winY, winW, winH);
+        ctx.strokeStyle = '#9CA3AF';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(winX, winY, winW, winH);
+        ctx.beginPath();
+        ctx.moveTo(winX + winW / 2, winY);
+        ctx.lineTo(winX + winW / 2, winY + winH);
+        ctx.stroke();
+
+        // Wylewka betonowa na dole
+        ctx.fillStyle = '#D1D5DB';
+        ctx.fillRect(0, canvas.height - 18, canvas.width, 18);
+        ctx.fillStyle = '#9CA3AF';
+        ctx.fillRect(0, canvas.height - 20, canvas.width, 3);
+      }
+
+      // Rysowanie postaci bohatera (Przemysław Lipka z łatą 2m i kaskiem)
+      function drawPlayer() {
+        const px = player.x;
+        const py = player.y;
+        const pw = player.width;
+        const ph = player.height;
+
+        ctx.save();
+
+        // Poświata podczas aktywnej kamery termowizyjnej
+        if (player.hasThermalBoost) {
+          ctx.shadowColor = '#EA580C';
+          ctx.shadowBlur = 18;
+        }
+
+        // Łata murarska 2m trzymana poziomo (strefa łapania usterek)
+        ctx.fillStyle = player.hasThermalBoost ? '#EA580C' : '#F59E0B';
+        ctx.strokeStyle = '#78350F';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(px - 10, py + 12, pw + 20, 12, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Libelle (oczka poziomicy) na łacie
+        ctx.fillStyle = '#10B981';
+        ctx.fillRect(px + pw / 2 - 8, py + 14, 16, 8);
+
+        // Tułów (kamizelka inżyniera / koszulka Lipka na Budowie)
+        ctx.fillStyle = '#0F766E';
+        ctx.beginPath();
+        ctx.roundRect(px + 22, py + 44, pw - 44, 42, 10);
+        ctx.fill();
+
+        // Pasy odblaskowe na kamizelce
+        ctx.fillStyle = '#FACC15';
+        ctx.fillRect(px + 24, py + 58, pw - 48, 5);
+        ctx.fillRect(px + 24, py + 70, pw - 48, 5);
+
+        // Głowa
+        ctx.fillStyle = '#FDE68A';
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + 32, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Okulary inżyniera
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + pw / 2 - 11, py + 28, 9, 6);
+        ctx.strokeRect(px + pw / 2 + 2, py + 28, 9, 6);
+
+        // Biały kask kierownika / inspektora
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + 24, 17, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+        // Daszek kasku
+        ctx.fillRect(px + pw / 2 - 20, py + 22, 40, 4);
+
+        ctx.restore();
+      }
+
+      // Rysowanie spadających usterek i wymówek
+      function drawItems() {
+        for (const item of items) {
+          ctx.save();
+          // Karta / tło elementu
+          ctx.fillStyle = item.isBad ? '#FEE2E2' : '#FFFFFF';
+          ctx.strokeStyle = item.color;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(item.x, item.y, item.size, item.size, 12);
+          ctx.fill();
+          ctx.stroke();
+
+          // Ikona Emoji
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(item.emoji, item.x + item.size / 2, item.y + item.size / 2 + 2);
+
+          // Etykieta nad elementem dla czytelności
+          ctx.font = '600 11px Inter, sans-serif';
+          ctx.fillStyle = item.isBad ? '#B91C1C' : '#111827';
+          ctx.fillText(item.label, item.x + item.size / 2, item.y - 7);
+          ctx.restore();
+        }
+      }
+
+      // Rysowanie unoszących się punktów
+      function drawFloatingTexts() {
+        for (const ft of floatingTexts) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, ft.alpha);
+          ctx.font = '700 18px "Space Grotesk", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = ft.color;
+          ctx.fillText(ft.text, ft.x, ft.y);
+          ctx.restore();
+        }
+      }
+
+      // Aktualizacja logiki klatka po klatce
+      function update(dt) {
+        // Ruch gracza
+        player.x += player.vx * dt;
+        if (player.x < 12) player.x = 12;
+        if (player.x > canvas.width - player.width - 12) {
+          player.x = canvas.width - player.width - 12;
+        }
+
+        // Czas trwania bonusu kamery termowizyjnej
+        if (player.hasThermalBoost) {
+          player.boostTimer -= dt;
+          if (player.boostTimer <= 0) {
+            player.hasThermalBoost = false;
+          }
+        }
+
+        // Generowanie kolejnych obiektów
+        spawnTimer -= dt;
+        if (spawnTimer <= 0) {
+          spawnItem();
+          const baseDelay = Math.max(0.45, 1.05 - (45 - timeLeft) * 0.012);
+          spawnTimer = baseDelay;
+        }
+
+        // Aktualizacja pozycji obiektów i detekcja kolizji z łatą murarską
+        const catchZone = {
+          x: player.x - 12,
+          y: player.y + 8,
+          width: player.width + 24,
+          height: player.height - 10
+        };
+
+        for (let i = items.length - 1; i >= 0; i--) {
+          const it = items[i];
+          it.y += it.speed * dt;
+
+          // Sprawdzenie kolizji (AABB)
+          const hit =
+            it.x < catchZone.x + catchZone.width &&
+            it.x + it.size > catchZone.x &&
+            it.y < catchZone.y + catchZone.height &&
+            it.y + it.size > catchZone.y;
+
+          if (hit) {
+            if (it.isBad) {
+              score = Math.max(0, score + it.points);
+              addFloatingText(it.x + it.size / 2, it.y, `${it.points} zł!`, '#EF4444');
+              playSound('bad');
+            } else if (it.isPowerup) {
+              player.hasThermalBoost = true;
+              player.boostTimer = 6;
+              score += it.points;
+              addFloatingText(it.x + it.size / 2, it.y, 'TERMOWIZJA 2x PKT!', '#EA580C');
+              playSound('powerup');
+            } else {
+              const multiplier = player.hasThermalBoost ? 2 : 1;
+              const gained = it.points * multiplier;
+              score += gained;
+              defectsCount += 1;
+              addFloatingText(
+                it.x + it.size / 2,
+                it.y,
+                `+${gained.toLocaleString('pl-PL')} zł`,
+                player.hasThermalBoost ? '#EA580C' : '#059669'
+              );
+              playSound('good');
+            }
+
+            updateHUD();
+            items.splice(i, 1);
+            continue;
+          }
+
+          // Usunięcie obiektów, które spadły poza ekran
+          if (it.y > canvas.height + 20) {
+            items.splice(i, 1);
+          }
+        }
+
+        // Aktualizacja unoszących się napisów
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+          const ft = floatingTexts[i];
+          ft.y += ft.vy * dt;
+          ft.alpha -= dt * 1.1;
+          if (ft.alpha <= 0) {
+            floatingTexts.splice(i, 1);
+          }
+        }
+      }
+
+      // Aktualizacja liczników na górnym pasku
+      function updateHUD() {
+        scoreDisplay.textContent = `${score.toLocaleString('pl-PL')} zł`;
+        defectsDisplay.textContent = defectsCount;
+        timeDisplay.textContent = `${timeLeft}s`;
+
+        if (timeLeft <= 10) {
+          timeDisplay.classList.add('danger');
+        } else {
+          timeDisplay.classList.remove('danger');
+        }
+      }
+
+      // Główna pętla renderowania
+      function gameLoop(timestamp) {
+        if (!gameRunning) return;
+        const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+        lastTimestamp = timestamp;
+
+        update(dt);
+        drawBackground();
+        drawItems();
+        drawPlayer();
+        drawFloatingTexts();
+
+        // Pasek informacji o aktywnej kamerze termowizyjnej
+        if (player.hasThermalBoost) {
+          ctx.fillStyle = 'rgba(234, 88, 12, 0.9)';
+          ctx.beginPath();
+          ctx.roundRect(16, 16, 230, 30, 8);
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = '700 13px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(`📷 Kamera Termowizyjna: ${player.boostTimer.toFixed(1)}s`, 26, 35);
+        }
+
+        animationFrameId = requestAnimationFrame(gameLoop);
+      }
+
+      // Rozpoczęcie rozgrywki
+      function startGame() {
+        initAudio();
+        resizeCanvas();
+        score = 0;
+        defectsCount = 0;
+        timeLeft = 45;
+        items = [];
+        floatingTexts = [];
+        player.x = (canvas.width - player.width) / 2;
+        player.vx = 0;
+        player.hasThermalBoost = false;
+        spawnTimer = 0.2;
+
+        updateHUD();
+        startScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+
+        gameRunning = true;
+        lastTimestamp = performance.now();
+
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          if (!gameRunning) return;
+          timeLeft -= 1;
+          updateHUD();
+          if (timeLeft <= 0) {
+            endGame();
+          }
+        }, 1000);
+
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(gameLoop);
+      }
+
+      // Zakończenie rozgrywki i podsumowanie protokołu
+      function endGame() {
+        gameRunning = false;
+        clearInterval(timerInterval);
+        cancelAnimationFrame(animationFrameId);
+        playSound('end');
+
+        const finalScoreEl = document.getElementById('finalScore');
+        const endSummaryEl = document.getElementById('endSummary');
+        const rankBadgeEl = document.getElementById('rankBadge');
+
+        finalScoreEl.textContent = `${score.toLocaleString('pl-PL')} zł`;
+
+        if (score >= 15000) {
+          rankBadgeEl.textContent = 'Mistrz Odbiorów Technicznych!';
+          rankBadgeEl.style.background = '#EA580C';
+          endSummaryEl.textContent = `Wykryłeś aż ${defectsCount} usterek niezgodnych z Polskimi Normami! Deweloper nie miał żadnych argumentów i wszystko wpisano do protokołu.`;
+        } else if (score >= 7000) {
+          rankBadgeEl.textContent = 'Solidny Inżynier';
+          rankBadgeEl.style.background = '#0F766E';
+          endSummaryEl.textContent = `Udało się wyłapać ${defectsCount} wad budowlanych. Klient zaoszczędził sporo pieniędzy na ekipie remontowej!`;
+        } else {
+          rankBadgeEl.textContent = 'Odbiór podstawowy';
+          rankBadgeEl.style.background = '#4B5563';
+          endSummaryEl.textContent = `Wpisano ${defectsCount} usterek do protokołu. Uważaj następnym razem na wymówki przedstawiciela dewelopera!`;
+        }
+
+        gameOverScreen.classList.remove('hidden');
+      }
+
+      // Obsługa klawiatury
+      const keys = { left: false, right: false };
+      function updateVelocityFromKeys() {
+        if (keys.left && !keys.right) player.vx = -player.speed;
+        else if (keys.right && !keys.left) player.vx = player.speed;
+        else player.vx = 0;
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          keys.left = true;
+          updateVelocityFromKeys();
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          keys.right = true;
+          updateVelocityFromKeys();
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          keys.left = false;
+          updateVelocityFromKeys();
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          keys.right = false;
+          updateVelocityFromKeys();
+        }
+      });
+
+      // Obsługa dotyku i myszy bezpośrednio na planszy
+      function movePlayerToPointer(clientX) {
+        if (!gameRunning) return;
+        const rect = canvas.getBoundingClientRect();
+        const relX = clientX - rect.left;
+        player.x = relX - player.width / 2;
+      }
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (e.buttons === 1 || gameRunning) {
+          movePlayerToPointer(e.clientX);
+        }
+      });
+
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          movePlayerToPointer(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          movePlayerToPointer(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      // Przyciski dotykowe na dole dla urządzeń mobilnych
+      leftTouchBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; updateVelocityFromKeys(); });
+      leftTouchBtn.addEventListener('touchend', () => { keys.left = false; updateVelocityFromKeys(); });
+      leftTouchBtn.addEventListener('mousedown', () => { keys.left = true; updateVelocityFromKeys(); });
+      leftTouchBtn.addEventListener('mouseup', () => { keys.left = false; updateVelocityFromKeys(); });
+
+      rightTouchBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; updateVelocityFromKeys(); });
+      rightTouchBtn.addEventListener('touchend', () => { keys.right = false; updateVelocityFromKeys(); });
+      rightTouchBtn.addEventListener('mousedown', () => { keys.right = true; updateVelocityFromKeys(); });
+      rightTouchBtn.addEventListener('mouseup', () => { keys.right = false; updateVelocityFromKeys(); });
+
+      // Przełącznik dźwięku
+      soundToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) {
+          soundIcon.className = 'fa-solid fa-volume-high';
+          soundText.textContent = 'Dźwięk: WŁ.';
+        } else {
+          soundIcon.className = 'fa-solid fa-volume-xmark';
+          soundText.textContent = 'Dźwięk: WYŁ.';
+        }
+      });
+
+      startBtn.addEventListener('click', startGame);
+      restartBtn.addEventListener('click', startGame);
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        if (!gameRunning) {
+          drawBackground();
+          drawPlayer();
+        }
+      });
+
+      // Inicjalizacja po załadowaniu okna
+      window.onload = function () {
+        resizeCanvas();
+        drawBackground();
+        drawPlayer();
+      };
+    })();
+  </script>
+</body>
+</html>
